@@ -1,6 +1,6 @@
 # Development and software implementation of processing algorithms for a compact luminescence spectrograph
 
-This repository contains the entire software development process for processing and improving the spectrum obtained by using a prototype of the _compact luminescence spectrograph_
+This repository contains the entire software development process for processing and improving the spectrum obtained by using a prototype of the _compact luminescence spectrograph_ (You can see the user manual in the file _Spectrograf_2022.pdf_)
 
 ### Philosophical meaning (purpose) of the project
 
