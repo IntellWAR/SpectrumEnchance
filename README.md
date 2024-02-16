@@ -14,6 +14,8 @@ Thus, the task of this project is to compensate for such distortions occurring i
 - Parasitic illumination
 - Noises
 - And others
+
+
 As well as improving image characteristics such as:
 - Resolution
 - Dynamic range
