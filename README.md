@@ -3,7 +3,7 @@
 This repository contains the entire software development process for processing and improving the spectrum obtained by using a prototype of the _compact luminescence spectrograph_ (You can see the user manual in the file _Spectrograf_2022.pdf_)
 
 ### Start
-#### To get spectrum and analyse it by some metrics (noise level, signal-to-noise ratio) you can use *get_spectrum.py*. Also an example of the source data is given in directory *static/...* 
+To get spectrum and analyse it by some metrics (noise level, signal-to-noise ratio) you can use *get_spectrum.py*. Also an example of the source data and result of the algorithm is given in directory *static/[measurement_ID]* and *static/logs_[measurment_ID]*, respectively.
 
 ### Philosophical meaning (purpose) of the project
 
