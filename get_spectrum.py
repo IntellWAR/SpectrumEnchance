@@ -51,7 +51,7 @@ STEP = 16
 if __name__ == '__main__':
     args = sys.argv[1:]
     # dir = args[0]
-    dir = path.normpath("static/b36c9dcc-2f88-469b-a5b0-7e049362abea")
+    dir = path.normpath("static/ec02a37a-2134-430f-944e-37bdc1a79d8f")
     LOGS_DIR = path.join(path.dirname(dir), 'logs_' + path.basename(dir))
     if path.exists(LOGS_DIR) == False:
         mkdir(LOGS_DIR)
@@ -86,7 +86,8 @@ if __name__ == '__main__':
                        mode='w',
                        newline='')
     writer = csv.writer(metric_file)
-    writer.writerow(['Iteration', 'RMS noise level', 'SNR_dB'])
+    writer.writerow(
+        ['Iteration', 'RMS noise level', 'Mean of Signal', 'SNR_dB', 'DNR_dB'])
     file_number = len(ordered_image_path)
     spectrum_array = None
     step = STEP
@@ -103,11 +104,14 @@ if __name__ == '__main__':
                                                fs=500)
         plt.plot(filtered_spectrum)
         RMS_noise = np.sqrt(np.mean((filtered_spectrum - spectrum)**2))
+        signal_mean = np.mean(spectrum)
         SNR_dB = 10 * np.log10(np.mean(spectrum**2) / (RMS_noise**2))
-        print('Iteration {}, RMS noise level = {:.2f}, SNR_dB = {:.2f}'.format(
-            iteration, RMS_noise, SNR_dB),
-              end='\n')
-        writer.writerow([iteration, RMS_noise, SNR_dB])
+        DNR_dB = 10 * np.log10((np.max(spectrum)**2) / (RMS_noise**2))
+        print(
+            'Iteration {}, RMS noise level = {:.2f}, Mean of signal = {:.2f} SNR_dB = {:.2f}, DNR_dB = {:.2f}'
+            .format(iteration, RMS_noise, signal_mean, SNR_dB, DNR_dB),
+            end='\n')
+        writer.writerow([iteration, RMS_noise, signal_mean, SNR_dB, DNR_dB])
         if spectrum_array is None:
             spectrum_array = spectrum.reshape(-1, 1)
         else:
