@@ -4,6 +4,7 @@ This repository contains the entire software development process for processing 
 
 ### Start
 To get spectrum and analyse it by some metrics (noise level, signal-to-noise ratio) you can use *get_spectrum.py*. Also an example of the source data and result of the algorithm is given in directory *static/[measurement_ID]* and *static/logs_[measurment_ID]*, respectively.
+
 To get spectrum with subtraction of the reference with obtaining the appropriate metrics enter the directory of the studied data and reference data at the top of the file *Spectrum_with_ref.py* and run it
 
 ### Philosophical meaning (purpose) of the project
