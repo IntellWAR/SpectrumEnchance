@@ -2,6 +2,7 @@ from os import listdir, path, mkdir
 from functools import reduce
 import numpy as np
 import matplotlib.pyplot as plt
+# from matplotlib.ticker import FuncFormatter
 import cv2
 import sys
 from scipy.signal import butter, filtfilt
@@ -17,10 +18,14 @@ if path.exists(LOGS_DIR) == False:
     mkdir(LOGS_DIR)
 IMG_FILE_NAME = path.join(LOGS_DIR,
                           'img_reffered_' + path.basename(dir) + '.png')
-IMG_FILE_NAME = path.join(LOGS_DIR, 'ref_img_' + path.basename(dir) + '.png')
-PLOT_FILE_NAME = path.join(LOGS_DIR,
-                           'plot_reffered' + path.basename(dir) + '.png')
+PLOT_FILE_NAME_eps = path.join(LOGS_DIR,
+                               'plot_reffered_' + path.basename(dir) + '.eps')
+PLOT_FILE_NAME_png = path.join(LOGS_DIR,
+                               'plot_reffered_' + path.basename(dir) + '.png')
+WAVELEN_PLOT_NAME = path.join(LOGS_DIR,
+                              'plot_in_wavelen_' + path.basename(dir) + '.eps')
 plt.figure(figsize=(16, 9))
+plt.rc('font', family='serif', size=16)
 
 
 # Get file names in 'path' folder
@@ -53,6 +58,10 @@ def convert_nm_to_pix(nm_value: float) -> float:
     return (158 / 59) * nm_value - 1178.146
 
 
+def convert_pix_to_nm(pix_value: float) -> float:
+    return (59 / 158) * (pix_value + 1178.146)
+
+
 # Butterworth filter
 def lowpass_filter_but(data, cutoff_freq, fs, order=5):
     nyquist_freq = 0.5 * fs
@@ -83,27 +92,6 @@ if __name__ == '__main__':
 
     ordered_image_path = get_ordered_files(path.join(dir, ''))
     print(f'Loaded {len(ordered_image_path)} images')
-
-    # file_len = len(ordered_image_path)
-    # length = file_len
-    # sum_img = get_sum_img(ordered_image_path, 0, length)
-    # np.savetxt(path.join(LOGS_DIR, 'sum_image_array.csv'),
-    #            sum_img,
-    #            fmt='%d',
-    #            delimiter=',')
-    # norm_img = cv2.normalize(sum_img,
-    #                          None,
-    #                          alpha=0,
-    #                          beta=255,
-    #                          norm_type=cv2.NORM_MINMAX,
-    #                          dtype=cv2.CV_8U)
-    # print(cv2.imwrite(IMG_FILE_NAME, norm_img))
-    # np.savetxt(path.join(LOGS_DIR, 'norm_image_array.csv'),
-    #            norm_img,
-    #            fmt='%d',
-    #            delimiter=',')
-    # # plt.imshow(norm_img)
-
     metric_file = open(path.join(LOGS_DIR, 'metrics_reffered.csv'),
                        mode='w',
                        newline='')
@@ -114,6 +102,7 @@ if __name__ == '__main__':
     file_number = len(ordered_image_path)
     spectrum_array = None
     ref_spectrum = get_ref_spectrum()
+    x_values = convert_pix_to_nm(np.arange(0, 1280))
     step = STEP
     iteration = 0
     for i in range(0, len(ordered_image_path) - step, step):
@@ -123,12 +112,13 @@ if __name__ == '__main__':
                 ordered_image_path, i,
                 STEP if i + STEP < file_number else file_number - STEP + 1))
         koef = np.mean(ref_spectrum) / np.mean(spectrum)
-        normalised_spectrum = spectrum * koef - ref_spectrum
-        plt.plot(normalised_spectrum, label=f'Iteration {iteration}')
+        # normalised_spectrum = spectrum * koef - ref_spectrum
+        normalised_spectrum = spectrum - ref_spectrum
+        plt.plot(x_values, normalised_spectrum, label=f'Iteration {iteration}')
         filtered_spectrum = lowpass_filter_but(normalised_spectrum,
                                                cutoff_freq=12,
                                                fs=500)
-        plt.plot(filtered_spectrum)
+        plt.plot(x_values, filtered_spectrum)
         RMS_noise = np.sqrt(
             np.mean((filtered_spectrum - normalised_spectrum)**2))
         signal_mean = np.mean(normalised_spectrum)
@@ -159,15 +149,9 @@ if __name__ == '__main__':
         ])
         writer.writerows(spectrum_array)
 
-    vertical_lines_x = [convert_nm_to_pix(i) for i in range(400, 750, 50)]
-    y_lim = plt.gca().get_ylim()
-    plt.vlines(vertical_lines_x,
-               ymin=y_lim[0],
-               ymax=y_lim[1],
-               color='gray',
-               linestyle='--')
     # plt.ylim(-50, 50)
-    plt.gca().spines['bottom'].set_position('zero')
+    # plt.gca().spines['bottom'].set_position('zero')
     plt.legend(loc='best')
-    plt.savefig(PLOT_FILE_NAME)
-    # plt.show()
+    plt.xticks(ticks=np.arange(400, 1000, 50))
+    plt.savefig(PLOT_FILE_NAME, format='png')
+    plt.savefig(PLOT_FILE_NAME, format='eps')

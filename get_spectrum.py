@@ -37,6 +37,10 @@ def convert_nm_to_pix(nm_value: float) -> float:
     return (158 / 59) * nm_value - 1178.146
 
 
+def convert_pix_to_nm(pix_value: float) -> float:
+    return (59 / 158) * (pix_value + 1178.146)
+
+
 # Butterworth filter
 def lowpass_filter_but(data, cutoff_freq, fs, order=5):
     nyquist_freq = 0.5 * fs
@@ -56,8 +60,12 @@ if __name__ == '__main__':
     if path.exists(LOGS_DIR) == False:
         mkdir(LOGS_DIR)
     IMG_FILE_NAME = path.join(LOGS_DIR, 'img_' + path.basename(dir) + '.png')
-    PLOT_FILE_NAME = path.join(LOGS_DIR, 'plot_' + path.basename(dir) + '.png')
+    PLOT_FILE_NAME_eps = path.join(LOGS_DIR,
+                                   'plot_' + path.basename(dir) + '.eps')
+    PLOT_FILE_NAME_png = path.join(LOGS_DIR,
+                                   'plot_' + path.basename(dir) + '.png')
     plt.figure(figsize=(16, 9))
+    plt.rc('font', family='serif', size=16)
 
     ordered_image_path = get_ordered_files(path.join(dir, ''))
     print(f'Loaded {len(ordered_image_path)} images')
@@ -90,6 +98,7 @@ if __name__ == '__main__':
         ['Iteration', 'RMS noise level', 'Mean of Signal', 'SNR_dB', 'DNR_dB'])
     file_number = len(ordered_image_path)
     spectrum_array = None
+    x_values = convert_pix_to_nm(np.arange(0, 1280))
     step = STEP
     iteration = 0
     for i in range(0, len(ordered_image_path) - step, step):
@@ -98,11 +107,11 @@ if __name__ == '__main__':
             get_sum_img(
                 ordered_image_path, i,
                 STEP if i + STEP < file_number else file_number - STEP + 1))
-        plt.plot(spectrum, label=f'Iteration {iteration}')
+        plt.plot(x_values, spectrum, label=f'Iteration {iteration}')
         filtered_spectrum = lowpass_filter_but(spectrum,
                                                cutoff_freq=12,
                                                fs=500)
-        plt.plot(filtered_spectrum)
+        plt.plot(x_values, filtered_spectrum)
         RMS_noise = np.sqrt(np.mean((filtered_spectrum - spectrum)**2))
         signal_mean = np.mean(spectrum)
         SNR_dB = 10 * np.log10(np.mean(spectrum**2) / (RMS_noise**2))
@@ -128,14 +137,17 @@ if __name__ == '__main__':
         ])
         writer.writerows(spectrum_array)
 
-    vertical_lines_x = [convert_nm_to_pix(i) for i in range(400, 750, 50)]
-    y_lim = plt.gca().get_ylim()
-    plt.vlines(vertical_lines_x,
-               ymin=y_lim[0],
-               ymax=y_lim[1],
-               color='gray',
-               linestyle='--')
+    # vertical_lines_x = [convert_nm_to_pix(i) for i in range(400, 750, 50)]
+    # y_lim = plt.gca().get_ylim()
+    # plt.vlines(vertical_lines_x,
+    #            ymin=y_lim[0],
+    #            ymax=y_lim[1],
+    #            color='gray',
+    #            linestyle='--')
 
     plt.legend(loc='best')
-    plt.savefig(PLOT_FILE_NAME)
+    plt.xlim(0)
+    plt.xticks(ticks=np.arange(400, 1000, 50))
+    plt.savefig(PLOT_FILE_NAME, format='png')
+    plt.savefig(PLOT_FILE_NAME, format='eps')
     # plt.show()
