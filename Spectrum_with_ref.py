@@ -153,5 +153,5 @@ if __name__ == '__main__':
     # plt.gca().spines['bottom'].set_position('zero')
     plt.legend(loc='best')
     plt.xticks(ticks=np.arange(400, 1000, 50))
-    plt.savefig(PLOT_FILE_NAME, format='png')
-    plt.savefig(PLOT_FILE_NAME, format='eps')
+    plt.savefig(PLOT_FILE_NAME_png, format='png')
+    plt.savefig(PLOT_FILE_NAME_eps, format='eps')

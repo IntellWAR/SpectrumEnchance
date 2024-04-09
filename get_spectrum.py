@@ -7,6 +7,7 @@ import sys
 from scipy.signal import butter, filtfilt
 import csv
 
+dir = path.normpath("static/ec02a37a-2134-430f-944e-37bdc1a79d8f")
 
 # Get file names in 'path' folder
 def get_ordered_files(path_value: str) -> list[str]:
@@ -55,7 +56,6 @@ STEP = 16
 if __name__ == '__main__':
     args = sys.argv[1:]
     # dir = args[0]
-    dir = path.normpath("static/ec02a37a-2134-430f-944e-37bdc1a79d8f")
     LOGS_DIR = path.join(path.dirname(dir), 'logs_' + path.basename(dir))
     if path.exists(LOGS_DIR) == False:
         mkdir(LOGS_DIR)
@@ -146,8 +146,8 @@ if __name__ == '__main__':
     #            linestyle='--')
 
     plt.legend(loc='best')
-    plt.xlim(0)
+    # plt.xlim(0)
     plt.xticks(ticks=np.arange(400, 1000, 50))
-    plt.savefig(PLOT_FILE_NAME, format='png')
-    plt.savefig(PLOT_FILE_NAME, format='eps')
+    plt.savefig(PLOT_FILE_NAME_png, format='png')
+    plt.savefig(PLOT_FILE_NAME_eps, format='eps')
     # plt.show()

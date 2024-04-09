@@ -2,10 +2,45 @@
 
 This repository contains the entire software development process for processing and improving the spectrum obtained by using a prototype of the _compact luminescence spectrograph_ (You can see the user manual in the file _Spectrograf_2022.pdf_)
 
-### Start
-To get spectrum and analyse it by some metrics (noise level, signal-to-noise ratio) you can use *get_spectrum.py*. Also an example of the source data and result of the algorithm is given in directory *static/[measurement_ID]* and *static/logs_[measurment_ID]*, respectively.
+### Get Started
+#### Requirements
+- Windows OS
+- [Python](https://www.python.org/downloads/windows/) version 3.10+
+- The pip utility built into python
+- Venv utility built into python
+#### Installation
+1. Download repository
+2. Open cmd in the root folder
+3. Create and activate [virtual environments](https://docs.python.org/3/library/venv.html):
+```
+python -m venv env
 
-To get spectrum with subtraction of the reference with obtaining the appropriate metrics enter the directory of the studied data and reference data at the top of the file *Spectrum_with_ref.py* and run it
+env\Scripts\activate.bat
+```
+4. Install libraries:
+```
+pip install opencv-python-headless
+pip install scipy
+pip install matplotlib
+pip install numpy
+```
+#### Usage
+
+To get spectrum and analyse it by some metrics (noise level, signal-to-noise ratio) you can use *get_spectrum.py*:
+1. At the top of the file in *dir = path.normpath(" ")* inside " " insert a link to the directory with the source data. For example *dir = path.normpath("static/ec02a37a-2134-430f-944e-37bdc1a79d8f")*
+2. With activated venv run next code in cmd
+```
+py get_spectrum.py
+```
+
+To get spectrum with subtraction of the reference with obtaining the appropriate metrics use *Spectrum_with_ref.py*:
+1. At the top of the file in *dir_ref = path.normpath(" ")* and *dir = path.normpath(" ")* inside " " insert links to the directories with the source data of the reference spectrum and the studied one, respectively.
+2. With activated venv run next code in cmd
+```
+py Spectrum_with_ref.py
+```
+The result of the work of the earlier mentioned algorithms can be found in *logs_[name_of_the_source_directory]* next to this directory.
+Also an example of the source data and result of the algorithm you can see in the [online cloud](https://disk.yandex.ru/d/yVBGErGbLEkZqQ).
 
 ### Philosophical meaning (purpose) of the project
 
