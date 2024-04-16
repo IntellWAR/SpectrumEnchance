@@ -61,3 +61,7 @@ Thus, the task of this project is to compensate for such distortions occurring i
 As well as improving image characteristics such as:
 - Resolution
 - Dynamic range
+
+### LICENSE
+Licensed under the Apache License, Version 2.0
+You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
