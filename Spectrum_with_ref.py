@@ -22,8 +22,8 @@ import sys
 from scipy.signal import butter, filtfilt
 import csv
 
-dir_ref = path.normpath("static/5dead71c-9c63-4944-b54c-88489922066a")
-dir = path.normpath("static/ec02a37a-2134-430f-944e-37bdc1a79d8f")
+dir_ref = path.normpath("static/746ec36a-e489-462d-8034-e7f9e6b0a4d3")
+dir = path.normpath("static/bb84308f-55fc-4864-9fd8-7cb7753ca612")
 
 STEP = 16
 
@@ -167,5 +167,8 @@ if __name__ == '__main__':
     # plt.gca().spines['bottom'].set_position('zero')
     plt.legend(loc='best')
     plt.xticks(ticks=np.arange(400, 1000, 50))
+    plt.minorticks_on()
+    plt.grid(which='major', linewidth='1.5')
+    plt.grid(which='minor', linewidth='0.5')
     plt.savefig(PLOT_FILE_NAME_png, format='png')
     plt.savefig(PLOT_FILE_NAME_eps, format='eps')

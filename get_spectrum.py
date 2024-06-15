@@ -12,16 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from os import listdir, path, mkdir
-from functools import reduce
-import numpy as np
-import matplotlib.pyplot as plt
-import cv2
-import sys
-from scipy.signal import butter, filtfilt
 import csv
+import sys
+from functools import reduce
+from os import listdir, path, mkdir
 
-dir = path.normpath("static/ec02a37a-2134-430f-944e-37bdc1a79d8f")
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.signal import butter, filtfilt
+
+dir = path.normpath("static/bb84308f-55fc-4864-9fd8-7cb7753ca612")
 
 # Get file names in 'path' folder
 def get_ordered_files(path_value: str) -> list[str]:
@@ -162,6 +163,9 @@ if __name__ == '__main__':
     plt.legend(loc='best')
     # plt.xlim(0)
     plt.xticks(ticks=np.arange(400, 1000, 50))
+    plt.minorticks_on()
+    plt.grid(which='major', linewidth='1.5')
+    plt.grid(which='minor', linewidth='0.5')
     plt.savefig(PLOT_FILE_NAME_png, format='png')
     plt.savefig(PLOT_FILE_NAME_eps, format='eps')
     # plt.show()
