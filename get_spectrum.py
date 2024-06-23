@@ -111,7 +111,7 @@ if __name__ == '__main__':
         print(i)
         iteration += 1
         spectrum = get_spectrum(
-            get_sum_img(ordered_image_path, i, STEP if i + STEP < file_number else file_number - i))
+            get_sum_img(ordered_image_path, i, STEP if i + STEP <= file_number else file_number - i))
 
         spectrum_norm = normalize_array(spectrum[:right_limit_pix])
         color = colors[iteration % len(colors)]  # Выбор цвета для графика
