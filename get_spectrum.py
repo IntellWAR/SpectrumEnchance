@@ -16,15 +16,52 @@ import csv
 import sys
 from functools import reduce
 from os import listdir, path, mkdir
+import spectrum_by_curves
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import butter, filtfilt
 
-dir = path.normpath("static/ec1de939-ab31-498b-90ae-72e58332af58")
-right_limit_nm = 720
-STEP = 16
+dir = path.normpath("static/d5ad0963-d44e-4f02-891c-bb1fd482fc5f")
+
+is_filtered = True  # Enable showing of the filtered signal in plot
+is_nm_given = False  # If borders given in pixels then False
+is_xscale_nm = True  # Enable scale in nanometers
+right_limit_pix = 750
+left_limit_pix = 5
+# right_limit_nm = 720
+# left_limit_nm = 445
+STEP = 16  # Files in one iteration
+is_parabolic_compensation = False  # Enable calculating the spectrum by parabolic curves
+
+
+# Converting nanometers to pixel value
+def convert_nm_to_pix(nm_value: float) -> float:
+    return (158 / 59) * nm_value - 1178.146
+
+
+def convert_pix_to_nm(pix_value: float) -> float:
+    return (59 / 158) * (pix_value + 1178.146)
+
+
+# Convert borders
+if is_xscale_nm:
+    if is_nm_given:
+        right_limit_pix = round(convert_nm_to_pix(right_limit_nm))
+        left_limit_pix = round(convert_nm_to_pix(left_limit_nm))
+    else:
+        right_limit_nm = round(convert_pix_to_nm(right_limit_pix))
+        left_limit_nm = round(convert_pix_to_nm(left_limit_pix))
+    x_values = convert_pix_to_nm(np.arange(left_limit_pix, right_limit_pix))
+else:
+    if is_nm_given:
+        right_limit_pix = round(convert_nm_to_pix(right_limit_nm))
+        left_limit_pix = round(convert_nm_to_pix(left_limit_nm))
+    else:
+        right_limit_nm = round(convert_pix_to_nm(right_limit_pix))
+        left_limit_nm = round(convert_pix_to_nm(left_limit_pix))
+    x_values = np.arange(left_limit_pix, right_limit_pix)
 
 
 # Get file names in 'path' folder
@@ -36,7 +73,6 @@ def get_ordered_files(path_value: str) -> list[str]:
 
 # Get sum image
 def get_sum_img(image_paths: list[str], start: int, size: int) -> np.array:
-    print(size)
     return np.array(reduce(lambda x, y: x + y,
                            [cv2.imread(image_paths[i])[:, :, 0].astype('uint64') for i in range(start, start + size)]),
                     dtype='uint64')
@@ -45,15 +81,6 @@ def get_sum_img(image_paths: list[str], start: int, size: int) -> np.array:
 # Get spectrum by pixel integrating image
 def get_spectrum(image: np.array) -> np.array:
     return np.array([np.average(image[:, i]) for i in range(image.shape[1])], dtype='uint64')
-
-
-# Converting nanometers to pixel value
-def convert_nm_to_pix(nm_value: float) -> float:
-    return (158 / 59) * nm_value - 1178.146
-
-
-def convert_pix_to_nm(pix_value: float) -> float:
-    return (59 / 158) * (pix_value + 1178.146)
 
 
 # Butterworth filter
@@ -71,8 +98,6 @@ def normalize_array(array):
         return array
     return array / max
 
-
-right_limit_pix = round(convert_nm_to_pix(right_limit_nm))
 
 if __name__ == '__main__':
     args = sys.argv[1:]
@@ -103,21 +128,25 @@ if __name__ == '__main__':
     writer.writerow(['Iteration', 'RMS noise level', 'Mean of Signal', 'SNR_dB', 'DNR_dB'])
     file_number = len(ordered_image_path)
     spectrum_array = None
-    x_values = convert_pix_to_nm(np.arange(0, right_limit_pix))
+    # x_values = np.arange(left_limit_pix, right_limit_pix)
     step = STEP
     colors = plt.cm.tab10(np.linspace(0, 1, len(ordered_image_path) // STEP))  # Массив цветов для графика
     iteration = 0
-    for i in range(0, len(ordered_image_path), step):
-        print(i)
+    for i in range(0, file_number, step):
         iteration += 1
-        spectrum = get_spectrum(
-            get_sum_img(ordered_image_path, i, STEP if i + STEP <= file_number else file_number - i))
-
-        spectrum_norm = normalize_array(spectrum[:right_limit_pix])
+        if is_parabolic_compensation:
+            spectrum = spectrum_by_curves.return_spectr(
+                get_sum_img(ordered_image_path, i, STEP if i + STEP <= file_number else file_number - i))
+        else:
+            spectrum = get_spectrum(
+                get_sum_img(ordered_image_path, i, STEP if i + STEP <= file_number else file_number - i))
+        spectrum_norm = normalize_array(spectrum[left_limit_pix:right_limit_pix])
+        # spectrum_norm = normalize_array(spectrum)
         color = colors[iteration % len(colors)]  # Выбор цвета для графика
         plt.plot(x_values, spectrum_norm, label=f'Iteration {iteration}', color=color)
         filtered_spectrum = lowpass_filter_but(spectrum_norm, cutoff_freq=12, fs=500)
-        plt.plot(x_values, filtered_spectrum, color=color)
+        if is_filtered:
+            plt.plot(x_values, filtered_spectrum, color=color)
         RMS_noise = np.sqrt(np.mean((filtered_spectrum - spectrum_norm) ** 2))
         signal_mean = np.mean(spectrum_norm)
         SNR_dB = 10 * np.log10(np.mean(spectrum_norm ** 2) / (RMS_noise ** 2))
@@ -130,26 +159,19 @@ if __name__ == '__main__':
         else:
             spectrum_array = np.hstack((spectrum_array, spectrum_norm.reshape(-1, 1)))
     metric_file.close()
-
     with open(path.join(LOGS_DIR, 'spectrum_array.csv'), 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["Iteration1", "Iteration2", "Iteration3", "Iteration4", "Iteration5", "Iteration6"])
         writer.writerows(spectrum_array)
 
-    # vertical_lines_x = [convert_nm_to_pix(i) for i in range(400, 750, 50)]
-    # y_lim = plt.gca().get_ylim()
-    # plt.vlines(vertical_lines_x,
-    #            ymin=y_lim[0],
-    #            ymax=y_lim[1],
-    #            color='gray',
-    #            linestyle='--')
-
+    # Plot drawing
     plt.legend(loc='best')
-    # plt.xlim(0)
     # plt.ylim(0, 1)
-    plt.xlabel('длина волны, нм')
+    if is_xscale_nm:
+        plt.xlabel('длина волны, нм')
+    else:
+        plt.xlabel('горизонтальная координата матрицы, пиксели')
     plt.ylabel('нормированная интенсивность')
-    # plt.xticks(ticks=np.arange(400, 800, 50))
     plt.minorticks_on()
     plt.grid(which='major', linewidth='1.5')
     plt.grid(which='minor', linewidth='0.5')
