@@ -24,17 +24,19 @@ from scipy.signal import butter, filtfilt
 
 dir = path.normpath("static/ec1de939-ab31-498b-90ae-72e58332af58")
 right_limit_nm = 720
+STEP = 16
 
 
 # Get file names in 'path' folder
 def get_ordered_files(path_value: str) -> list[str]:
     files = [f'{path_value}{f}' for f in listdir(path_value) if
-        path.isfile(path.join(path_value, f)) and f != 'sum_image.png']
+             path.isfile(path.join(path_value, f)) and f != 'sum_image.png']
     return sorted(files, key=lambda x: int(x.split('.')[1]))
 
 
 # Get sum image
 def get_sum_img(image_paths: list[str], start: int, size: int) -> np.array:
+    print(size)
     return np.array(reduce(lambda x, y: x + y,
                            [cv2.imread(image_paths[i])[:, :, 0].astype('uint64') for i in range(start, start + size)]),
                     dtype='uint64')
@@ -69,8 +71,8 @@ def normalize_array(array):
         return array
     return array / max
 
+
 right_limit_pix = round(convert_nm_to_pix(right_limit_nm))
-STEP = 16
 
 if __name__ == '__main__':
     args = sys.argv[1:]
@@ -105,10 +107,11 @@ if __name__ == '__main__':
     step = STEP
     colors = plt.cm.tab10(np.linspace(0, 1, len(ordered_image_path) // STEP))  # Массив цветов для графика
     iteration = 0
-    for i in range(0, len(ordered_image_path) - step, step):
+    for i in range(0, len(ordered_image_path), step):
+        print(i)
         iteration += 1
         spectrum = get_spectrum(
-            get_sum_img(ordered_image_path, i, STEP if i + STEP < file_number else file_number - STEP + 1))
+            get_sum_img(ordered_image_path, i, STEP if i + STEP < file_number else file_number - i))
 
         spectrum_norm = normalize_array(spectrum[:right_limit_pix])
         color = colors[iteration % len(colors)]  # Выбор цвета для графика
