@@ -22,30 +22,27 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import butter, filtfilt
 
-dir = path.normpath("static/bb84308f-55fc-4864-9fd8-7cb7753ca612")
+dir = path.normpath("static/ec1de939-ab31-498b-90ae-72e58332af58")
+right_limit_nm = 720
+
 
 # Get file names in 'path' folder
 def get_ordered_files(path_value: str) -> list[str]:
-    files = [
-        f'{path_value}{f}' for f in listdir(path_value)
-        if path.isfile(path.join(path_value, f)) and f != 'sum_image.png'
-    ]
+    files = [f'{path_value}{f}' for f in listdir(path_value) if
+        path.isfile(path.join(path_value, f)) and f != 'sum_image.png']
     return sorted(files, key=lambda x: int(x.split('.')[1]))
 
 
 # Get sum image
 def get_sum_img(image_paths: list[str], start: int, size: int) -> np.array:
-    return np.array(reduce(lambda x, y: x + y, [
-        cv2.imread(image_paths[i])[:, :, 0].astype('uint64')
-        for i in range(start, start + size)
-    ]),
+    return np.array(reduce(lambda x, y: x + y,
+                           [cv2.imread(image_paths[i])[:, :, 0].astype('uint64') for i in range(start, start + size)]),
                     dtype='uint64')
 
 
 # Get spectrum by pixel integrating image
 def get_spectrum(image: np.array) -> np.array:
-    return np.array([np.average(image[:, i]) for i in range(image.shape[1])],
-                    dtype='uint64')
+    return np.array([np.average(image[:, i]) for i in range(image.shape[1])], dtype='uint64')
 
 
 # Converting nanometers to pixel value
@@ -66,6 +63,13 @@ def lowpass_filter_but(data, cutoff_freq, fs, order=5):
     return filtered_data
 
 
+def normalize_array(array):
+    max = np.max(array)
+    if max == 0:
+        return array
+    return array / max
+
+right_limit_pix = round(convert_nm_to_pix(right_limit_nm))
 STEP = 16
 
 if __name__ == '__main__':
@@ -75,10 +79,8 @@ if __name__ == '__main__':
     if path.exists(LOGS_DIR) == False:
         mkdir(LOGS_DIR)
     IMG_FILE_NAME = path.join(LOGS_DIR, 'img_' + path.basename(dir) + '.png')
-    PLOT_FILE_NAME_eps = path.join(LOGS_DIR,
-                                   'plot_' + path.basename(dir) + '.eps')
-    PLOT_FILE_NAME_png = path.join(LOGS_DIR,
-                                   'plot_' + path.basename(dir) + '.png')
+    PLOT_FILE_NAME_eps = path.join(LOGS_DIR, 'plot_' + path.basename(dir) + '.eps')
+    PLOT_FILE_NAME_png = path.join(LOGS_DIR, 'plot_' + path.basename(dir) + '.png')
     plt.figure(figsize=(16, 9))
     plt.rc('font', family='serif', size=16)
 
@@ -88,68 +90,47 @@ if __name__ == '__main__':
     file_len = len(ordered_image_path)
     length = file_len
     sum_img = get_sum_img(ordered_image_path, 0, length)
-    np.savetxt(path.join(LOGS_DIR, 'sum_image_array.csv'),
-               sum_img,
-               fmt='%d',
-               delimiter=',')
-    norm_img = cv2.normalize(sum_img,
-                             None,
-                             alpha=0,
-                             beta=255,
-                             norm_type=cv2.NORM_MINMAX,
-                             dtype=cv2.CV_8U)
+    np.savetxt(path.join(LOGS_DIR, 'sum_image_array.csv'), sum_img, fmt='%d', delimiter=',')
+    norm_img = cv2.normalize(sum_img, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
     print(cv2.imwrite(IMG_FILE_NAME, norm_img))
-    np.savetxt(path.join(LOGS_DIR, 'norm_image_array.csv'),
-               norm_img,
-               fmt='%d',
-               delimiter=',')
+    np.savetxt(path.join(LOGS_DIR, 'norm_image_array.csv'), norm_img, fmt='%d', delimiter=',')
     # plt.imshow(norm_img)
 
-    metric_file = open(path.join(LOGS_DIR, 'metrics.csv'),
-                       mode='w',
-                       newline='')
+    metric_file = open(path.join(LOGS_DIR, 'metrics.csv'), mode='w', newline='')
     writer = csv.writer(metric_file)
-    writer.writerow(
-        ['Iteration', 'RMS noise level', 'Mean of Signal', 'SNR_dB', 'DNR_dB'])
+    writer.writerow(['Iteration', 'RMS noise level', 'Mean of Signal', 'SNR_dB', 'DNR_dB'])
     file_number = len(ordered_image_path)
     spectrum_array = None
-    x_values = convert_pix_to_nm(np.arange(0, 1280))
+    x_values = convert_pix_to_nm(np.arange(0, right_limit_pix))
     step = STEP
+    colors = plt.cm.tab10(np.linspace(0, 1, len(ordered_image_path) // STEP))  # Массив цветов для графика
     iteration = 0
     for i in range(0, len(ordered_image_path) - step, step):
         iteration += 1
         spectrum = get_spectrum(
-            get_sum_img(
-                ordered_image_path, i,
-                STEP if i + STEP < file_number else file_number - STEP + 1))
-        plt.plot(x_values, spectrum, label=f'Iteration {iteration}')
-        filtered_spectrum = lowpass_filter_but(spectrum,
-                                               cutoff_freq=12,
-                                               fs=500)
-        plt.plot(x_values, filtered_spectrum)
-        RMS_noise = np.sqrt(np.mean((filtered_spectrum - spectrum)**2))
-        signal_mean = np.mean(spectrum)
-        SNR_dB = 10 * np.log10(np.mean(spectrum**2) / (RMS_noise**2))
-        DNR_dB = 10 * np.log10((np.max(spectrum)**2) / (RMS_noise**2))
-        print(
-            'Iteration {}, RMS noise level = {:.2f}, Mean of signal = {:.2f} SNR_dB = {:.2f}, DNR_dB = {:.2f}'
-            .format(iteration, RMS_noise, signal_mean, SNR_dB, DNR_dB),
-            end='\n')
+            get_sum_img(ordered_image_path, i, STEP if i + STEP < file_number else file_number - STEP + 1))
+
+        spectrum_norm = normalize_array(spectrum[:right_limit_pix])
+        color = colors[iteration % len(colors)]  # Выбор цвета для графика
+        plt.plot(x_values, spectrum_norm, label=f'Iteration {iteration}', color=color)
+        filtered_spectrum = lowpass_filter_but(spectrum_norm, cutoff_freq=12, fs=500)
+        plt.plot(x_values, filtered_spectrum, color=color)
+        RMS_noise = np.sqrt(np.mean((filtered_spectrum - spectrum_norm) ** 2))
+        signal_mean = np.mean(spectrum_norm)
+        SNR_dB = 10 * np.log10(np.mean(spectrum_norm ** 2) / (RMS_noise ** 2))
+        DNR_dB = 10 * np.log10((np.max(spectrum_norm) ** 2) / (RMS_noise ** 2))
+        print('Iteration {}, RMS noise level = {:.4f}, Mean of signal = {:.2f} SNR_dB = {:.2f}, DNR_dB = {:.2f}'.format(
+            iteration, RMS_noise, signal_mean, SNR_dB, DNR_dB), end='\n')
         writer.writerow([iteration, RMS_noise, signal_mean, SNR_dB, DNR_dB])
         if spectrum_array is None:
-            spectrum_array = spectrum.reshape(-1, 1)
+            spectrum_array = spectrum_norm.reshape(-1, 1)
         else:
-            spectrum_array = np.hstack(
-                (spectrum_array, spectrum.reshape(-1, 1)))
+            spectrum_array = np.hstack((spectrum_array, spectrum_norm.reshape(-1, 1)))
     metric_file.close()
 
-    with open(path.join(LOGS_DIR, 'spectrum_array.csv'), 'w',
-              newline='') as csvfile:
+    with open(path.join(LOGS_DIR, 'spectrum_array.csv'), 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow([
-            "Iteration1", "Iteration2", "Iteration3", "Iteration4",
-            "Iteration5", "Iteration6"
-        ])
+        writer.writerow(["Iteration1", "Iteration2", "Iteration3", "Iteration4", "Iteration5", "Iteration6"])
         writer.writerows(spectrum_array)
 
     # vertical_lines_x = [convert_nm_to_pix(i) for i in range(400, 750, 50)]
@@ -162,10 +143,12 @@ if __name__ == '__main__':
 
     plt.legend(loc='best')
     # plt.xlim(0)
-    plt.xticks(ticks=np.arange(400, 1000, 50))
+    # plt.ylim(0, 1)
+    plt.xlabel('длина волны, нм')
+    plt.ylabel('нормированная интенсивность')
+    # plt.xticks(ticks=np.arange(400, 800, 50))
     plt.minorticks_on()
     plt.grid(which='major', linewidth='1.5')
     plt.grid(which='minor', linewidth='0.5')
     plt.savefig(PLOT_FILE_NAME_png, format='png')
-    plt.savefig(PLOT_FILE_NAME_eps, format='eps')
-    # plt.show()
+    plt.savefig(PLOT_FILE_NAME_eps, format='eps')  # plt.show()
